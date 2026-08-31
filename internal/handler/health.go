@@ -15,7 +15,7 @@ var startTime = time.Now()
 func Index(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]any{
 		"name": "test",
-		"docs": "GET /healthz",
+		"docs": "GET /health",
 		"time": time.Now().UTC().Format(time.RFC3339),
 	})
 }

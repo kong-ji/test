@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "comment": "Banner recognition rules. Externalised on purpose: no fingerprint is hardcoded in the Go sources. Extend coverage by editing this file (or mounting another one over /etc/banner-fp/rules.json) and restarting / sending SIGHUP to the server.",
+  "fallback": {
+    "protocol": "unknown",
+    "product": "",
+    "version": "",
+    "os_hint": "",
+    "confidence": 0
+  },
+  "os_hints": [
+    {"name": "Ubuntu", "pattern": "(?i)\\bubuntu\\b"},
+    {"name": "Debian", "pattern": "(?i)\\bdebian\\b"},
+    {"name": "CentOS", "pattern": "(?i)\\bcentos\\b"},
+    {"name": "RHEL", "pattern": "(?i)\\b(?:red\\s?hat|rhel|fedora)\\b"},
+    {"name": "FreeBSD", "pattern": "(?i)\\bfreebsd\\b"},
+    {"name": "Alpine", "pattern": "(?i)\\balpine\\b"},
+    {"name": "Windows", "pattern": "(?i)\\b(?:windows|win32|win64)\\b"}
+  ],
+  "rules": [
+    {
+      "id": "ssh-openssh",
+      "protocol": "SSH",
+      "product": "OpenSSH",
+      "version_group": "version",
+      "confidence": 0.95,
+      "pattern": "(?i)SSH-[0-9.]+[-_]OpenSSH[_.-](?P<version>[0-9]+\\.[0-9]+(?:p[0-9]+)?)"
+    },
+    {
+      "id": "ssh-generic",
+      "protocol": "SSH",
+      "confidence": 0.6,
+      "pattern": "(?i)^SSH-[0-9.]+"
+    },
+
+    {
+      "id": "http-nginx",
+      "protocol": "HTTP",
+      "product": "nginx",
+      "version_group": "version",
+      "confidence": 0.9,
+      "pattern": "(?im)^\\s*Server:\\s*nginx/(?P<version>[0-9][0-9A-Za-z.]*)"
+    },
+    {
+      "id": "http-apache",
+      "protocol": "HTTP",
+      "product": "Apache",
+      "version_group": "version",
+      "confidence": 0.9,
+      "pattern": "(?im)^\\s*Server:\\s*Apache/(?P<version>[0-9][0-9A-Za-z.]*)"
+    },
+    {
+      "id": "http-jetty",
+      "protocol": "HTTP",
+      "product": "Jetty",
+      "version_group": "version",
+      "confidence": 0.85,
+      "pattern": "(?im)^\\s*Server:\\s*Jetty[/(]?(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+)"
+    },
+    {
+      "id": "http-iis",
+      "protocol": "HTTP",
+      "product": "Microsoft-IIS",
+      "version_group": "version",
+      "confidence": 0.9,
+      "pattern": "(?im)^\\s*Server:\\s*Microsoft-IIS/(?P<version>[0-9][0-9A-Za-z.]*)"
+    },
+    {
+      "id": "http-tomcat",
+      "protocol": "HTTP",
+      "product": "Tomcat",
+      "version_group": "version",
+      "confidence": 0.85,
+      "pattern": "(?i)\\bTomcat[/-]?(?P<version>[0-9][0-9.]*)"
+    },
+    {
+      "id": "http-server-header",
+      "protocol": "HTTP",
+      "product_group": "product",
+      "version_group": "version",
+      "confidence": 0.7,
+      "pattern": "(?im)^\\s*Server:\\s*(?P<product>[A-Za-z0-9][A-Za-z0-9._-]*)(?:/(?P<version>[0-9][0-9A-Za-z.]*))?"
+    },
+    {
+      "id": "http-response-line",
+      "protocol": "HTTP",
+      "confidence": 0.6,
+      "pattern": "(?i)^HTTP/[0-9]"
+    },
+
+    {
+      "id": "mysql-handshake",
+      "protocol": "MySQL",
+      "product": "MySQL",
+      "version_group": "version",
+      "confidence": 0.9,
+      "ports": [3306],
+      "pattern": "\\x00{3}\\n(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+[A-Za-z0-9._-]*)\\x00"
+    },
+    {
+      "id": "mysql-text",
+      "protocol": "MySQL",
+      "product": "MySQL",
+      "version_group": "version",
+      "confidence": 0.9,
+      "pattern": "(?i)\\bmysql\\b[^\\n]{0,32}?(?P<version>[0-9]+\\.[0-9]+(?:\\.[0-9]+)?)"
+    },
+
+    {
+      "id": "redis-response",
+      "protocol": "Redis",
+      "product": "Redis",
+      "confidence": 0.7,
+      "pattern": "^(?:\\+PONG|-NOAUTH\\b|-DENIED\\b|-LOADING\\b|-MASTERDOWN\\b|-WRONGTYPE\\b|-READONLY\\b|-ERR\\b)"
+    },
+    {
+      "id": "redis-ok",
+      "protocol": "Redis",
+      "product": "Redis",
+      "confidence": 0.7,
+      "ports": [6379],
+      "pattern": "^\\+OK\\s*$"
+    },
+
+    {
+      "id": "smtp-postfix",
+      "protocol": "SMTP",
+      "product": "Postfix",
+      "confidence": 0.85,
+      "pattern": "(?i)^220[- ].*\\bpostfix\\b"
+    },
+    {
+      "id": "smtp-generic",
+      "protocol": "SMTP",
+      "confidence": 0.6,
+      "pattern": "(?i)^220[- ].*(?:\\besmtp\\b|\\bsmtp\\b)"
+    },
+
+    {
+      "id": "ftp-proftpd",
+      "protocol": "FTP",
+      "product": "ProFTPD",
+      "version_group": "version",
+      "confidence": 0.9,
+      "pattern": "(?i)^220[- ][^\\n]*?ProFTPD\\s+(?P<version>[0-9][0-9.]*)"
+    },
+    {
+      "id": "ftp-vsftpd",
+      "protocol": "FTP",
+      "product": "vsftpd",
+      "version_group": "version",
+      "confidence": 0.9,
+      "pattern": "(?i)\\(\\s*vsFTPd\\s+(?P<version>[0-9][0-9.]*)\\)"
+    },
+    {
+      "id": "ftp-pureftpd",
+      "protocol": "FTP",
+      "product": "Pure-FTPd",
+      "confidence": 0.85,
+      "pattern": "(?i)pure-?ftpd"
+    },
+    {
+      "id": "ftp-iis",
+      "protocol": "FTP",
+      "product": "Microsoft FTP Service",
+      "confidence": 0.85,
+      "pattern": "(?i)^220[- ]\\s*Microsoft FTP Service"
+    },
+    {
+      "id": "ftp-generic",
+      "protocol": "FTP",
+      "confidence": 0.5,
+      "pattern": "(?i)^220[- ]"
+    }
+  ],
+  "port_fallbacks": [
+    {"ports": [22], "protocol": "SSH", "confidence": 0.5},
+    {"ports": [21, 990], "protocol": "FTP", "confidence": 0.5},
+    {"ports": [80, 443, 8000, 8080, 8443, 8888, 3000], "protocol": "HTTP", "confidence": 0.4},
+    {"ports": [3306], "protocol": "MySQL", "product": "MySQL", "confidence": 0.5},
+    {"ports": [6379], "protocol": "Redis", "product": "Redis", "confidence": 0.5},
+    {"ports": [5432], "protocol": "PostgreSQL", "product": "PostgreSQL", "confidence": 0.5},
+    {"ports": [27017], "protocol": "MongoDB", "product": "MongoDB", "confidence": 0.5},
+    {"ports": [25, 465, 587], "protocol": "SMTP", "confidence": 0.5},
+    {"ports": [23], "protocol": "Telnet", "confidence": 0.5},
+    {"ports": [3389], "protocol": "RDP", "confidence": 0.5},
+    {"ports": [1433], "protocol": "MSSQL", "product": "Microsoft SQL Server", "confidence": 0.5},
+    {"ports": [5900], "protocol": "VNC", "confidence": 0.5}
+  ]
+}

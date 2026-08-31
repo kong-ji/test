@@ -1,0 +1,68 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: banner-fp/server:latest
+    # Isolated project network; containers reach each other by service name
+    # (http://server:8080). No host-network mode, no default-bridge leakage.
+    networks:
+      - fpnet
+    ports:
+      # Only the server API is published to the host.
+      - "8080:8080"
+    environment:
+      APP_PORT: "8080"
+      APP_LOG_LEVEL: "info"
+      APP_RULES_PATH: /etc/banner-fp/rules.json
+    volumes:
+      # Rules are read-only mounted so fingerprints stay decoupled from the
+      # image: edit ./configs/rules.json and restart, no rebuild needed.
+      - ./configs/rules.json:/etc/banner-fp/rules.json:ro
+    read_only: true
+    tmpfs:
+      # Minimal writable scratch area if ever needed; rootfs stays read-only.
+      - /tmp:size=64k,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      # Real liveness probe against the actual /health endpoint (busybox wget
+      # ships with alpine), not a mere TCP port check.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    image: banner-fp/client:latest
+    networks:
+      - fpnet
+    environment:
+      # Reaches the server over the internal network by service name — no
+      # hardcoded host IP, no host-network access.
+      SERVER_URL: http://server:8080
+      INPUT_FILE: /data/input.json
+    volumes:
+      - ./examples/input.json:/data/input.json:ro
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      server:
+        # Start only after the server's healthcheck has actually passed.
+        condition: service_healthy
+    # One-shot: prints results and exits 0; not restarted on success.
+    restart: "no"
+
+networks:
+  fpnet:
+    driver: bridge

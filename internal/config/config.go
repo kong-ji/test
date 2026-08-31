@@ -18,6 +18,7 @@ type Config struct {
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
 	ShutdownTimeout time.Duration
+	RulesPath       string
 }
 
 // Load reads configuration from the environment, falling back to defaults.
@@ -30,6 +31,7 @@ func Load() Config {
 		WriteTimeout:    durationOrDefault("APP_WRITE_TIMEOUT", 10*time.Second),
 		IdleTimeout:     durationOrDefault("APP_IDLE_TIMEOUT", 60*time.Second),
 		ShutdownTimeout: durationOrDefault("APP_SHUTDOWN_TIMEOUT", 10*time.Second),
+		RulesPath:       envOrDefault("APP_RULES_PATH", "configs/rules.json"),
 	}
 }
 

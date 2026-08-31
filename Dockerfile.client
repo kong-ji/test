@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+
+# =============================================================================
+# Build the CLI client as its own image. It reads a JSON file, POSTs it to the
+# server, and prints the identification results.
+# =============================================================================
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /src
+
+COPY go.mod ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" \
+    -o /out/client ./cmd/client
+
+# =============================================================================
+# Runtime: alpine for a non-root user; the client is a short-lived one-shot.
+# =============================================================================
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S -g 10001 app \
+    && adduser -S -D -u 10001 -G app app
+
+COPY --from=builder /out/client /client
+
+USER 10001:10001
+
+ENTRYPOINT ["/client"]

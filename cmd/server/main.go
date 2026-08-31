@@ -10,7 +10,9 @@ import (
 	"syscall"
 
 	"github.com/kong-ji/test/internal/config"
+	"github.com/kong-ji/test/internal/fingerprint"
 	"github.com/kong-ji/test/internal/router"
+	"github.com/kong-ji/test/internal/rules"
 	"github.com/kong-ji/test/internal/server"
 )
 
@@ -23,14 +25,34 @@ func main() {
 
 	slog.Info("starting service", "env", cfg.Env, "log_level", cfg.LogLevel)
 
+	rl, err := rules.Load(cfg.RulesPath)
+	if err != nil {
+		slog.Error("failed to load rules", "path", cfg.RulesPath, "error", err)
+		os.Exit(1)
+	}
+
+	engine := fingerprint.New(rl)
+	handler := router.NewWithEngine(engine)
+
 	srv := server.New(server.Options{
 		Addr:            cfg.Addr(),
-		Handler:         router.New(),
+		Handler:         handler,
 		ReadTimeout:     cfg.ReadTimeout,
 		WriteTimeout:    cfg.WriteTimeout,
 		IdleTimeout:     cfg.IdleTimeout,
 		ShutdownTimeout: cfg.ShutdownTimeout,
 	})
+
+	// SIGHUP placeholder: rule hot-reload is not yet wired to a dynamic engine
+	// swap; log receipt so the signal is acknowledged without disrupting the
+	// running server.
+	sighupCh := make(chan os.Signal, 1)
+	signal.Notify(sighupCh, syscall.SIGHUP)
+	go func() {
+		for range sighupCh {
+			slog.Info("SIGHUP received, rules reload not yet wired")
+		}
+	}()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
